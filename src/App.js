@@ -4,6 +4,7 @@ import LoginForm from './components/LoginForm'
 import BlogForm from './components/BlogForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
+import Togglable from './components/Togglable'
 
 
 const App = () => {
@@ -12,8 +13,6 @@ const App = () => {
   const [password, setPassword] = useState('')
   const [user, setUser] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
-  const [newTitle, setNewTitle] = useState('')
-  const [newUrl, setNewUrl] = useState('')
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
@@ -54,16 +53,13 @@ const App = () => {
     }
   }
 
-  const addBlog = (async (event) => {
-    event.preventDefault()
-    const newBlog = {
-      title: newTitle,
-      url: newUrl,
-    }
-
+  const addBlog = (async (blogObject) => {
     try {
-      await blogService.create(newBlog)
-      setErrorMessage(`New blog ${newBlog.title} added!`)
+      await blogService.create(blogObject)
+      blogFormRef.current.toggleVisibility()
+      blogService.getAll().then(blogs =>
+        setBlogs(blogs))
+      setErrorMessage(`New blog ${blogObject.title} added!`)
       setTimeout(() => {
         setErrorMessage(null)
       }, 5000)
@@ -76,37 +72,100 @@ const App = () => {
     }
   })
 
+  const deleteBlog = async (blogObject) => {
+    try {
+      await blogService.remove(blogObject)
+      setErrorMessage(`Deleted blog ${blogObject.title}`)
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+      await blogService.getAll().then(blogs =>
+        setBlogs(blogs)
+      )
+    }
+    catch (exception) {
+      setErrorMessage(`Error: ${exception}`)
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+    }
+  }
+
   const handleLogout = (() => {
     setUser(null)
     window.localStorage.removeItem('loggedBlogappUser')
   })
 
-  const handleTitleChange = (event => {
-    setNewTitle(event.target.value)
-  })
+  const blogFormRef = React.createRef()
+
+  const blogForm = () => {
+    return (
+      <Togglable buttonLabel="Add new Blog" ref={blogFormRef}>
+        <BlogForm createBlog={addBlog} />
+      </Togglable>
+    )
+  }
 
 
-  const handleUrlChange = (event => {
-    setNewUrl(event.target.value)
-  })
+  const loginForm = () => {
+    return (
+      <div>
+        <h2>log in first you bastard</h2>
+        <div className="message">
+          {errorMessage}
+        </div>
+
+        <Togglable buttonLabel="Log In">
+          <LoginForm
+            handleLogin={handleLogin}
+            username={username}
+            setUsername={setUsername}
+            password={password}
+            setPassword={setPassword}
+          />
+        </Togglable>
+      </div >
+    )
+  }
+
+  const addBlogLike = async (blogObject) => {
+    try {
+      await blogService.update(blogObject)
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+    }
+    catch (exception) {
+      setErrorMessage(`Error: ${exception}`)
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+    }
+  }
+
+  const sortedBlogs = () => {
+    // Sort blogs by likes
+    let mapped = blogs.map((blog, i) => {
+      return { index: i, value: blog.likes }
+    })
+    mapped.sort((a, b) => {
+      if (a.value > b.value) {
+        return -1
+      }
+      if (a.value < b.value) {
+        return 1
+      }
+      return 0
+    })
+
+    return mapped.map(blog => blogs[blog.index])
+  }
+
 
 
   if (user === null) {
     return (
-      <div>
-        <h2>log in first you bastard</h2>
-
-        <div class="message">
-          {errorMessage}
-        </div>
-        <LoginForm
-          handleLogin={handleLogin}
-          username={username}
-          setUsername={setUsername}
-          password={password}
-          setPassword={setPassword}
-        />
-      </div>
+      loginForm()
     )
   }
 
@@ -114,24 +173,27 @@ const App = () => {
     <div>
       <h2>blogs</h2>
 
-      <div class="message">
+      <div className="message">
         {errorMessage}
       </div>
 
-      <p>{user.username} logged in
+      <p><b>{user.username}</b> logged in
       <button onClick={handleLogout}>Logout</button></p>
-      <BlogForm
-        addBlog={addBlog}
-        newTitle={newTitle}
-        newUrl={newUrl}
-        handleTitleChange={handleTitleChange}
-        handleUrlChange={handleUrlChange}
-      />
 
-      {blogs.map(blog =>
-        <Blog key={blog.id} blog={blog} />
-      )}
-    </div>
+      {blogForm()}
+
+      {
+
+        sortedBlogs().map(blog =>
+          <Blog key={blog.id}
+            blog={blog}
+            addBlogLike={addBlogLike}
+            user={user}
+            deleteBlog={deleteBlog}
+          />
+        )
+      }
+    </div >
   )
 }
 
