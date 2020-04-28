@@ -25,17 +25,20 @@ const NoteForm = ({ createBlog }) => {
     return (
         <form onSubmit={addBlog}>
             Title: <input
+                id="title"
                 value={newTitle}
                 onChange={handleTitleChange}
             />
 
             <br />
             Author: <input
+                id="author"
                 value={newAuthor}
                 onChange={handleAuthorChange}
             />
             <br />
             URL: <input
+                id="url"
                 value={newUrl}
                 onChange={handleUrlChange}
             />
