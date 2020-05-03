@@ -52,8 +52,8 @@ const Blog = ({ blog, addBlogLike, deleteBlog, user }) => {
                 <button style={showWhenVisible} onClick={() => setVisible(false)}>close</button>
                 <div style={showWhenVisible} className="extendedContent">
                     <b>URL:</b> {blog.url}<br />
-                    <b>Likes:</b> {likes} &nbsp;
-                    <button onClick={addLike}>Like</button>
+                    <b>Likes:</b> <span className="likesNumber">{likes}</span> &nbsp;
+                    <button onClick={addLike} className="likeButton">Like</button>
                     <br />
                     <b>Added by:</b> {blog.user.username}<br />
                     <div style={showDeleteButton}>
